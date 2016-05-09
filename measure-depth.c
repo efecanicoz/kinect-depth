@@ -192,16 +192,27 @@ void *gl_threadfunc(void *arg)
 
 uint16_t t_gamma[2048];
 
+uint8_t reverse(uint8_t data)
+{
+	uint8_t retVal = 0, count = 7;
+	while(data)
+	{
+		retVal |= (data & 0x01) << count;
+		count--;
+	}
+}
+
 void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
 {
 	int i;
 	uint16_t *depth = (uint16_t*)v_depth;
 
 	pthread_mutex_lock(&depth_mutex);
-	for (i=0; i<640*480; i++) {
+	for (i=0; i<640*480; i++) 
+	{
 		int pval = t_gamma[depth[i]];
 		int lb = pval & 0xff;
-		switch (pval>>8) {
+		switch (pval>>8) { 
 			case 0:
 				depth_mid[3*i+0] = 255;
 				depth_mid[3*i+1] = 255-lb;
@@ -246,7 +257,7 @@ void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
 
 void *freenect_threadfunc(void *arg)
 {
-	freenect_set_led(f_dev,LED_RED);
+	freenect_set_led(f_dev,LED_GREEN);
 	freenect_set_depth_callback(f_dev, depth_cb);
 	freenect_set_depth_mode(f_dev, freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT));
 	
@@ -305,6 +316,7 @@ int main(int argc, char **argv)
 		v = powf(v, 3)* 6;
 		t_gamma[i] = v*6*256;
 	}
+	
 
 	g_argc = argc;
 	g_argv = argv;
@@ -315,7 +327,7 @@ int main(int argc, char **argv)
 	}
 
 	freenect_set_log_level(f_ctx, FREENECT_LOG_DEBUG);
-	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
+	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_CAMERA));
 
 	int nr_devices = freenect_num_devices (f_ctx);
 	printf ("Number of devices found: %d\n", nr_devices);

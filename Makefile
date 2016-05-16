@@ -19,7 +19,7 @@ measure-depth: measure-depth.o
 	gcc $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	
 measure-depth.o:
-	gcc $(CFLAGS) -c measure-depth.c $(LDFLAGS) $(LDLIBS)
+	gcc $(CFLAGS) -c measure-depth.c  $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f *.o measure-depth measure-depth-example

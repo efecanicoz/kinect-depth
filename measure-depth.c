@@ -25,21 +25,7 @@
  */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "libfreenect.h"
-
-#include <pthread.h>
-
-#if defined(__APPLE__)
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
-
-#include <math.h>
+#include "measure-depth.h"
 
 pthread_t freenect_thread;
 volatile int die = 0;
@@ -192,15 +178,6 @@ void *gl_threadfunc(void *arg)
 
 uint16_t t_gamma[2048];
 
-uint8_t reverse(uint8_t data)
-{
-	uint8_t retVal = 0, count = 7;
-	while(data)
-	{
-		retVal |= (data & 0x01) << count;
-		count--;
-	}
-}
 
 void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
 {
@@ -208,8 +185,9 @@ void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
 	uint16_t *depth = (uint16_t*)v_depth;
 
 	pthread_mutex_lock(&depth_mutex);
-	for (i=0; i<640*480; i++) 
+	for (i=640*240; i<640*241; i++) 
 	{
+		//printf("%d %d\n",i, depth[i]);
 		int pval = t_gamma[depth[i]];
 		int lb = pval & 0xff;
 		switch (pval>>8) { 
@@ -266,22 +244,12 @@ void *freenect_threadfunc(void *arg)
 	int status = 0;
 	while (!die && status >= 0) {
 		status = freenect_process_events(f_ctx);
-		if (requested_format != current_format || requested_resolution != current_resolution) {
+				
+		if (requested_format != current_format || requested_resolution != current_resolution) 
+		{
 			printf("Hello you've been here\n");
-			//freenect_stop_video(f_dev);
-			//freenect_set_video_mode(f_dev, freenect_find_video_mode(requested_resolution, requested_format));
-			//pthread_mutex_lock(&video_mutex);
-			//free(rgb_back);
-			//free(rgb_mid);
-			//free(rgb_front);
-			//rgb_back = (uint8_t*)malloc(freenect_find_video_mode(requested_resolution, requested_format).bytes);
-			//rgb_mid = (uint8_t*)malloc(freenect_find_video_mode(requested_resolution, requested_format).bytes);
-			//rgb_front = (uint8_t*)malloc(freenect_find_video_mode(requested_resolution, requested_format).bytes);
 			current_format = requested_format;
 			current_resolution = requested_resolution;
-			//pthread_mutex_unlock(&video_mutex);
-			//freenect_set_video_buffer(f_dev, rgb_back);
-			//freenect_start_video(f_dev);
 		}
 	}
 
@@ -325,9 +293,12 @@ int main(int argc, char **argv)
 		printf("freenect_init() failed\n");
 		return 1;
 	}
+	
+	freenect_set_fw_address_nui(f_ctx, getFWData1473(), getFWSize1473());
+	//freenect_set_fw_address_k4w(f_ctx, getFWDatak4w(), getFWSizek4w());
 
 	freenect_set_log_level(f_ctx, FREENECT_LOG_DEBUG);
-	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_CAMERA));
+	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
 
 	int nr_devices = freenect_num_devices (f_ctx);
 	printf ("Number of devices found: %d\n", nr_devices);

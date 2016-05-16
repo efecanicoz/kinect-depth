@@ -62,6 +62,9 @@ int got_rgb = 0;
 int got_depth = 0;
 int depth_on = 1;
 
+uint16_t depthArr[640];
+uint16_t depthArrFront[640];
+
 void DispatchDraws() {
 	pthread_mutex_lock(&depth_mutex);
 	if (got_depth) {
@@ -73,21 +76,28 @@ void DispatchDraws() {
 
 void DrawDepthScene()
 {
+	unsigned int i;
 	pthread_mutex_lock(&depth_mutex);
 	if (got_depth) {
-		uint8_t* tmp = depth_front;
+		/*uint8_t* tmp = depth_front;
 		depth_front = depth_mid;
-		depth_mid = tmp;
+		depth_mid = tmp;*/
+		for(i=0;i<640;i++)
+			depthArrFront[i] = depthArr[i];
 		got_depth = 0;
 	}
 	pthread_mutex_unlock(&depth_mutex);
-
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
+	glBegin(GL_LINE_STRIP);
+		for(i=0; i < 640; i++)
+			glVertex2i(i, depthArrFront[i]>>2);
+	glEnd();
+	
+	//glEnable(GL_TEXTURE_2D);
 
-	glEnable(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
+	/*glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, depth_front);
 
 	glBegin(GL_TRIANGLE_FAN);
@@ -95,7 +105,7 @@ void DrawDepthScene()
 	glTexCoord2f(0, 0); glVertex3f(0,0,0);
 	glTexCoord2f(1, 0); glVertex3f(640,0,0);
 	glTexCoord2f(1, 1); glVertex3f(640,480,0);
-	glTexCoord2f(0, 1); glVertex3f(0,480,0);
+	glTexCoord2f(0, 1); glVertex3f(0,480,0);*/
 	glEnd();
 
 	glutSwapBuffers();
@@ -131,7 +141,7 @@ void ReSizeGLScene(int Width, int Height)
 	glViewport(0,0,Width,Height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho (0, Width, Height, 0, -1.0f, 1.0f);
+	glOrtho (0, Width, 0, Height, -1.0f, 1.0f);
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -144,14 +154,14 @@ void InitGL(int Width, int Height)
 	glEnable(GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glShadeModel(GL_SMOOTH);
-	glGenTextures(1, &gl_depth_tex);
+	/*glGenTextures(1, &gl_depth_tex);
 	glBindTexture(GL_TEXTURE_2D, gl_depth_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glGenTextures(1, &gl_rgb_tex);
 	glBindTexture(GL_TEXTURE_2D, gl_rgb_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 	ReSizeGLScene(Width, Height);
 }
 
@@ -181,53 +191,14 @@ uint16_t t_gamma[2048];
 
 void depth_cb(freenect_device *dev, void *v_depth, uint32_t timestamp)
 {
-	int i;
+	int i,j;
 	uint16_t *depth = (uint16_t*)v_depth;
 
 	pthread_mutex_lock(&depth_mutex);
-	for (i=640*240; i<640*241; i++) 
-	{
-		//printf("%d %d\n",i, depth[i]);
-		int pval = t_gamma[depth[i]];
-		int lb = pval & 0xff;
-		switch (pval>>8) { 
-			case 0:
-				depth_mid[3*i+0] = 255;
-				depth_mid[3*i+1] = 255-lb;
-				depth_mid[3*i+2] = 255-lb;
-				break;
-			case 1:
-				depth_mid[3*i+0] = 255;
-				depth_mid[3*i+1] = lb;
-				depth_mid[3*i+2] = 0;
-				break;
-			case 2:
-				depth_mid[3*i+0] = 255-lb;
-				depth_mid[3*i+1] = 255;
-				depth_mid[3*i+2] = 0;
-				break;
-			case 3:
-				depth_mid[3*i+0] = 0;
-				depth_mid[3*i+1] = 255;
-				depth_mid[3*i+2] = lb;
-				break;
-			case 4:
-				depth_mid[3*i+0] = 0;
-				depth_mid[3*i+1] = 255-lb;
-				depth_mid[3*i+2] = 255;
-				break;
-			case 5:
-				depth_mid[3*i+0] = 0;
-				depth_mid[3*i+1] = 0;
-				depth_mid[3*i+2] = 255-lb;
-				break;
-			default:
-				depth_mid[3*i+0] = 0;
-				depth_mid[3*i+1] = 0;
-				depth_mid[3*i+2] = 0;
-				break;
-		}
-	}
+	
+	for (i=640*240,j; i<640*241; i++,j++) 
+		depthArr[j] = depth[i];
+	
 	got_depth++;
 	pthread_mutex_unlock(&depth_mutex);
 }

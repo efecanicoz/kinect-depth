@@ -78,10 +78,12 @@ void DrawDepthScene()
 {
 	unsigned int i;
 	pthread_mutex_lock(&depth_mutex);
-	if (got_depth) {
+	if (got_depth) 
+	{
 		/*uint8_t* tmp = depth_front;
 		depth_front = depth_mid;
-		depth_mid = tmp;*/
+		depth_mid = tmp;
+		*/
 		for(i=0;i<640;i++)
 			depthArrFront[i] = depthArr[i];
 		got_depth = 0;
@@ -92,7 +94,7 @@ void DrawDepthScene()
 	glLoadIdentity();
 	glBegin(GL_LINE_STRIP);
 		for(i=0; i < 640; i++)
-			glVertex2i(i, depthArrFront[i]>>2);
+			glVertex2f(i,  depthArrFront[i]);
 	glEnd();
 	
 	//glEnable(GL_TEXTURE_2D);
@@ -141,7 +143,7 @@ void ReSizeGLScene(int Width, int Height)
 	glViewport(0,0,Width,Height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho (0, Width, 0, Height, -1.0f, 1.0f);
+	glOrtho (0, Width, 0, 4*Height, -1.0f, 1.0f);
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -250,7 +252,8 @@ int main(int argc, char **argv)
 	printf("Kinect camera test\n");
 
 	int i;
-	for (i=0; i<2048; i++) {
+	for (i=0; i<2048; i++) 
+	{
 		float v = i/2048.0;
 		v = powf(v, 3)* 6;
 		t_gamma[i] = v*6*256;
@@ -265,9 +268,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	
-	freenect_set_fw_address_nui(f_ctx, getFWData1473(), getFWSize1473());
-	//freenect_set_fw_address_k4w(f_ctx, getFWDatak4w(), getFWSizek4w());
-
+	
 	freenect_set_log_level(f_ctx, FREENECT_LOG_DEBUG);
 	freenect_select_subdevices(f_ctx, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
 

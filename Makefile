@@ -28,4 +28,4 @@ depth-array: depth-array.o
 	gcc -o $@ $^ -lfreenect -lusb-1.0
 
 clean:
-	rm -f *.o measure-depth measure-depth-example
+	rm -f *.o measure-depth measure-depth-example depth-array
